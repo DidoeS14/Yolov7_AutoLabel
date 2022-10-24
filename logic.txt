@@ -1,0 +1,25 @@
+Hello,
+I am trying to automate my annotations. I trained a model which can detect the object, so once an object is detected I am saving its x,y,w,h i.e(left_x: 43 top_y: 102 width: 498 height: 291).
+But if I try to open this in Yolo_mark or labelImg I am not able to view it.
+From this thread I understood I need to scale in between 0-1, but when I divide it with width or height its not near equal.
+The below I got from LabelImg tool in Yolo format.
+0.450000 0.515625 0.825000 0.610417
+Please help how to get a relation between the detected box values and what yolo uses for training.
+
+Are you able to get the formula? I am also having the same issue.
+{'class_id': 0, 'width': 20, 'top': 387, 'height': 74, 'left': 789}, {'class_id': 1, 'width': 25, 'top': 348, 'height': 31, 'left': 805}, {'class_id': 2, 'width': 19, 'top': 447, 'height': 26, 'left': 826}, {'class_id': 4, 'width': 47, 'top': 545, 'height': 33, 'left': 727}, {'class_id': 3, 'width': 32, 'top': 364, 'height': 144, 'left': 896}, {'class_id': 5, 'width': 89, 'top': 246, 'height': 97, 'left': 825}, {'class_id': 7, 'width': 254, 'top': 224, 'height': 388, 'left': 725}
+'image_size': [{'width': 1040, 'depth': 3, 'height': 780}]}
+
+You have to follow a formula
+x = (x1+x1+w1)/2
+y = (y1+y1+h1)/2
+with open('Annotations.txt', 'a') as file:
+file.write(f'{classid} {y/512} {x/512} {(w1+20)/512} {(h1+20)/512}') # where 512 is the image width and height
+
+yes. i have tried this. and this is working fine.
+save detected coordinates like. if your image size is 512x470 or else.
+just save the detected coordinates like example blow.
+(y1,x1) = image.shape[:2] # these are width and height of an image
+x,y,w,h = detected_coordinates # its corrdinates of a bounding box of an object of image
+ymid, xmid, height, width = (((1+y1)/2)/y1, ((1+x1)/2)/x1, (y1-1)/y1, (x1-1)/x1)
+print('{:0.6f} {:1.6f} {:2.6f} {:3.6f}'.format(xmid, ymid, width, height))
