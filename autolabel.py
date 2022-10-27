@@ -1,6 +1,7 @@
 # import threading # not good
 from multiprocessing import Process
 import os.path
+import os
 import time
 import torch
 # import torch.nn as nn
@@ -11,15 +12,17 @@ import tqdm
 
 
 def Load_weights():
-    full_path = "D:\Projects\Yolov7_AutoLabel\yolov7.pt"
-    path_to_file = "D:\Projects\Yolov7_AutoLabel"
+    full_path = "C:\Projects\mq3-counter\\best-1-1-0.pt"
+    path_to_file = "C:\Projects\mq3-counter"
     return full_path, path_to_file
 
 
 class Yolo:
-    def __init__(self, source, show):
-        self.source = source  # list
-        self.show = show  # boolean
+    def __init__(self, source,output, cn, ci):
+        self.source = source  # location
+        self.output = output
+        self.cn = cn
+        self.ci = ci
         p = Process(target=self.process)
         p.start()
 
@@ -30,17 +33,6 @@ class Yolo:
         blue = (200, 0, 0)
         yellow = (127, 255, 212)
         white = (255, 255, 255)
-
-        bg_color = white
-        text_color = red
-
-        # detected people
-        tScreenPplCount = ''
-        lScreenPplCount = ''
-
-        # counter of corrupted frames in a row
-        corrFramesInARow = 0
-
         weights, path_to_weights = Load_weights()
         # good detection: ('ultralytics/yolov5', 'yolov5m6') yolov7: ('WongKinYiu/yolov7', 'yolov7')
 
@@ -53,7 +45,9 @@ class Yolo:
         weights = torch.load(weights, map_location=torch.device('cpu'))
         model = torch.hub.load(path_to_weights, 'custom', weights, source='local', force_reload=True)
 
-        model.classes = [0]  # detects only people
+        model.classes = [int(self.ci)]  # 0 detects only people
+
+        if not os.path.exists(self.output): os.makedirs((self.output))
 
         for filename in tqdm.tqdm(os.listdir(self.source)):
             f = os.path.join(self.source, filename)
@@ -65,6 +59,11 @@ class Yolo:
 
                 # codec = cv2.VideoWriter_fourcc(*'mp4v')  ##(*'XVID')
 
+                def MakeClassesTxt():
+                    with open(self.output + '/classes.txt', 'w') as c:
+                        c.write(self.cn)
+                        c.close()
+
                 def CheckForNewPeople(ret, frame):
 
                         # str(results) #shows the size and classes
@@ -75,9 +74,6 @@ class Yolo:
                         det = results.xyxy[0]
                         #print(det)
                         return det
-
-                if self.show:
-                    cv2.namedWindow(f, cv2.WINDOW_NORMAL)  # makes window resizable
 
 
                 start_time = time.time()  # start time of the loop for the fps calculator
@@ -112,7 +108,7 @@ class Yolo:
                 # print(f'file name {f}')
                 # print(f'image size:{cap.shape[0]} {cap.shape[1]}')
                 label_name = f.replace('.jpg','.txt')
-                label_name = label_name.replace('images','labels')
+                label_name = label_name.replace(self.source,self.output)
                 # print(f'label file name {label_name}')
 
                 with open(label_name,'w')as l:
@@ -142,17 +138,21 @@ class Yolo:
                     # print("FPS: ",fps) # FPS = 1 / time to process loop
                 cv2.putText(cap, ('FPS: ' + fps), (10, 1070), cv2.FONT_HERSHEY_PLAIN, 2, green, 3)
 
-                    # cv2.imshow('mask',masked_frame)
-                if self.show:
-                        cv2.imshow(f, cap)
-                        cv2.resizeWindow(f, 720, 480)  # remove this to resize the frame with mouse freely
-                        key = cv2.waitKey(1)
-                        if key == 27:  # quit the program if esc is pressed
-                            cap.release()
-                            cv2.destroyAllWindows()
-                else:
-                        pass
+                MakeClassesTxt()
 
 
 if __name__ == '__main__':
-    Yolo("images",False).process()
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Auto labeling tool')
+    parser.add_argument('--i','-input',action="store",default="images",help="A string that indicates the name of the input folder")
+    parser.add_argument('--o','-output',action="store",default="labels",help="A string that indicates the name of the output folder")
+    parser.add_argument('--cn','-class-name',action="store",default="Not_Defined",help="The name of the class you want to detect")
+    parser.add_argument('--ci','-class-index',action="store",default=0, help="The class index from the model you are using")
+    args = parser.parse_args()
+    yinput = args.i
+    youtput = args.o
+    cn = args.cn
+    ci = args.ci
+
+    Yolo(yinput, youtput, cn, ci)
