@@ -21,6 +21,14 @@ from detectron2.layers import paste_masks_in_image
 
 # upgrade loading model with autoparser
 def Load_weights():
+        """
+    Loads the path and filename for model weights.
+
+    Returns:
+        tuple: A tuple containing:
+            - full_path (str): Full path to the model weights file.
+            - path_to_file (str): Directory path to the model weights.
+    """
     full_path = "" # you must add path here like: C:\Projects\Yolov7_AutoLabel\modeium-7-1-6.p
     path_to_file = "" # and here like: C:\Projects\Yolov7_AutoLabel
     return full_path, path_to_file
@@ -28,6 +36,13 @@ def Load_weights():
 
 class Yolo:
     def init(self, source,output):
+          """
+    Initializes the Yolo class with source and output directories and sets up a separate process for processing images.
+
+    Args:
+        source (str): Directory path to the source images.
+        output (str): Directory path to output the processed label files.
+    """
         self.source = source  # location
         self.output = output
         self.cn = cn
@@ -38,6 +53,19 @@ class Yolo:
         p.start()
 
     def bounding_boxes(self):
+          """
+    Detects objects in images using a YOLO model and saves the bounding box annotations in YOLO format.
+
+    The function:
+        1. Loads weights and initializes the model.
+        2. Loops through images in the specified source directory.
+        3. For each image, runs object detection and extracts bounding box coordinates.
+        4. Writes bounding box annotations to a .txt file in YOLO format, with class IDs and normalized coordinates.
+        5. Creates a classes.txt file containing the class names.
+
+    Raises:
+        Exception: If there is an issue processing an image file, it skips the file and continues.
+    """
 
         weights, path_to_weights = Load_weights()
         weights = torch.load(weights, map_location=torch.device('cpu'))
@@ -57,6 +85,12 @@ class Yolo:
                     cap = cv2.imread(f)
 
                     def MakeClassesTxt():
+                         """
+    Creates a 'classes.txt' file in the output directory with the class names.
+
+    Notes:
+        - Writes the contents of `self.cn` to 'classes.txt'.
+    """
                         with open(self.output + '/classes.txt', 'w') as c:
                             c.write(self.cn)
                             c.close()
@@ -96,6 +130,11 @@ class Yolo:
                     print(e)
                     continue
     def process(self):
+           """
+    Starts the process of generating bounding box annotations by calling `bounding_boxes`.
+
+    Runs in a separate process when initialized, enabling parallel image processing.
+    """
             self.bounding_boxes()
 
 if __name__ == '__main__':
